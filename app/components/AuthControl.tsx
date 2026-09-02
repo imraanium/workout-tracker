@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { signIn, signUp } from "../actions";
+import { signIn, signOut, signUp } from "../actions";
 
 export function AuthControl({ email }: { email: string | null }) {
-  const [open, setOpen] = useState(false);
   const router = useRouter();
+  const [open, setOpen] = useState(!email);
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [error, setError] = useState("");
   if (email && !open)
@@ -20,13 +20,15 @@ export function AuthControl({ email }: { email: string | null }) {
     );
   return (
     <div className="relative">
-      <button
-        onClick={() => setOpen((value) => !value)}
-        className="rounded-xl border border-hairline bg-panel px-3 py-2 text-xs font-bold text-slate-300"
-      >
-        {email ? email.slice(0, 2).toUpperCase() : "Login"}
-      </button>
-      {open && (
+      {email && (
+        <button
+          onClick={() => setOpen(false)}
+          className="rounded-xl border border-hairline bg-panel px-3 py-2 text-xs font-bold text-slate-300"
+        >
+          {email.slice(0, 2).toUpperCase()}
+        </button>
+      )}
+      {open && !email && (
         <form
           action={async (formData) => {
             setError("");
@@ -74,6 +76,30 @@ export function AuthControl({ email }: { email: string | null }) {
             {mode === "login" ? "Create an account" : "Already registered?"}
           </button>
         </form>
+      )}
+      {open && email && (
+        <div className="absolute right-0 top-12 z-50 w-48 space-y-2 rounded-xl border border-hairline bg-panel p-4 shadow-panel">
+          <p className="truncate text-xs text-slate-400">{email}</p>
+          {error && <p className="text-xs text-rose-400">{error}</p>}
+          <button
+            type="button"
+            onClick={async () => {
+              setError("");
+              try {
+                await signOut();
+                setOpen(true);
+                router.refresh();
+              } catch (cause) {
+                setError(
+                  cause instanceof Error ? cause.message : "Could not log out",
+                );
+              }
+            }}
+            className="w-full rounded-lg border border-hairline p-2 text-xs font-bold text-slate-300"
+          >
+            Log out
+          </button>
+        </div>
       )}
     </div>
   );
