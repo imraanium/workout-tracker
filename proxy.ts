@@ -12,7 +12,19 @@ export async function proxy(request: NextRequest) {
       items.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
     } } },
   );
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isLoginPage = request.nextUrl.pathname === '/login';
+
+  if (!user && !isLoginPage) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  if (user && isLoginPage) {
+    return NextResponse.redirect(new URL('/', request.url));
+  }
+
   return response;
 }
 
