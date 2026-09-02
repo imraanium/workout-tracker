@@ -10,15 +10,18 @@ export function useTemplates(initialTemplates: WorkoutTemplate[] = []) {
   const saveTemplate = useCallback(async (template: WorkoutTemplate) => {
     const withSummary: WorkoutTemplate = { ...template, summary: summarizeTemplate(template) };
     setIsSaving(true);
-    const savedId = await saveTemplateAction(withSummary);
-    const saved = { ...withSummary, id: savedId };
-    setTemplates((prev) =>
-    prev.some((t) => t.id === template.id) ?
-    prev.map((t) => t.id === template.id ? saved : t) :
-    [...prev, saved]
-    );
-    setIsSaving(false);
-    return saved;
+    try {
+      const savedId = await saveTemplateAction(withSummary);
+      const saved = { ...withSummary, id: savedId };
+      setTemplates((prev) =>
+      prev.some((t) => t.id === template.id) ?
+      prev.map((t) => t.id === template.id ? saved : t) :
+      [...prev, saved]
+      );
+      return saved;
+    } finally {
+      setIsSaving(false);
+    }
   }, []);
 
   const deleteTemplate = useCallback(async (id: string) => {
