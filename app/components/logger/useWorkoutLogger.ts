@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { previousBySet } from '../../data/exercises';
 import type { ExerciseRow, SetRow, WorkoutDraft, WorkoutTemplate, WorkoutType } from '../../types/workout';
+import { fetchPreviousStats, logWorkout } from '../../actions';
 
 function makeIdFactory() {
   let n = 0;
@@ -11,7 +11,7 @@ function makeIdFactory() {
 }
 
 function buildSets(name: string, count: number, nextId: () => string): SetRow[] {
-  const previous = previousBySet[name] ?? [];
+  const previous: string[] = [];
   return Array.from({ length: count }, (_, i) => ({
     id: nextId(),
     previous: previous[i] ?? null,
@@ -31,25 +31,10 @@ const emptyExercise = (nextId: () => string): ExerciseRow => ({
 export function useWorkoutLogger() {
   const nextId = useRef(makeIdFactory()).current;
   const [draft, setDraft] = useState<WorkoutDraft>(() => ({
-    name: 'Push Day A',
+    name: '',
     type: 'strength',
-    dateTime: '2026-09-02T18:30',
-    exercises: [
-    {
-      id: nextId(),
-      name: 'Bench Press',
-      targetReps: '5 × 5',
-      sets: buildSets('Bench Press', 4, nextId).map((s, i) =>
-      i === 0 ? { ...s, weight: '190', reps: '5', done: true } : s
-      )
-    },
-    {
-      id: nextId(),
-      name: 'Overhead Press',
-      targetReps: '3 × 6',
-      sets: buildSets('Overhead Press', 3, nextId)
-    }]
-
+    dateTime: new Date().toISOString().slice(0, 16),
+    exercises: []
   }));
 
   const patch = useCallback((next: Partial<WorkoutDraft>) => {
@@ -67,8 +52,10 @@ export function useWorkoutLogger() {
         if (ex.id !== id) return ex;
         const merged = { ...ex, ...next };
         if (next.name !== undefined && next.name !== ex.name) {
-          const previous = previousBySet[next.name] ?? [];
-          merged.sets = merged.sets.map((s, i) => ({ ...s, previous: previous[i] ?? null }));
+          void fetchPreviousStats(next.name).then((previous) => setDraft((current) => ({
+            ...current, exercises: current.exercises.map((item) => item.id === id
+              ? { ...item, sets: item.sets.map((set, i) => ({ ...set, previous: previous[i] ?? null })) } : item),
+          })));
         }
         return merged;
       })
@@ -95,7 +82,7 @@ export function useWorkoutLogger() {
           ...ex.sets,
           {
             id: nextId(),
-            previous: (previousBySet[ex.name] ?? [])[ex.sets.length] ?? null,
+            previous: null,
             weight: '',
             reps: '',
             done: false
@@ -170,6 +157,10 @@ export function useWorkoutLogger() {
     [nextId]
   );
 
+  const finishWorkout = useCallback(async () => {
+    await logWorkout(draft);
+  }, [draft]);
+
   const stats = useMemo(() => {
     let completed = 0;
     let total = 0;
@@ -199,7 +190,8 @@ export function useWorkoutLogger() {
     removeSet,
     updateSet,
     toggleSet,
-    loadTemplate
+    loadTemplate,
+    finishWorkout
   };
 }
 

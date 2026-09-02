@@ -1,15 +1,17 @@
 import { FlameIcon, DumbbellIcon } from "lucide-react";
 import { SegmentedTabs } from "./Navigation";
 import type { TabId } from "../types/workout";
+import { AuthControl } from "./AuthControl";
 
 interface HeaderProps {
   active: TabId;
   onChange: (tab: TabId) => void;
   onOpenWarmUp: () => void;
   today: string;
+  userEmail: string | null;
 }
 
-export function Header({ active, onChange, onOpenWarmUp, today }: HeaderProps) {
+export function Header({ active, onChange, onOpenWarmUp, today, userEmail }: HeaderProps) {
   return (
     <header className="sticky top-0 z-30 border-b border-hairline bg-canvas/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 md:px-6">
@@ -37,14 +39,7 @@ export function Header({ active, onChange, onOpenWarmUp, today }: HeaderProps) {
             <span className="hidden lg:inline">Warm-Up</span>
           </button>
 
-          <button
-            className="flex items-center gap-2 rounded-xl border border-hairline bg-panel p-1 pr-1 transition-colors duration-150 ease-swift hover:border-slate-600"
-            aria-label="Account: Maya Ellis, signed in"
-          >
-            <span className="grid h-7 w-7 place-items-center rounded-lg bg-slate-800 text-[11px] font-bold text-slate-200">
-              ME
-            </span>
-          </button>
+          <AuthControl email={userEmail} />
         </div>
       </div>
     </header>

@@ -1,7 +1,8 @@
 import { ChevronRightIcon, DumbbellIcon, FootprintsIcon } from "lucide-react";
-import { recentWorkouts, weekSummary } from "../data/history";
+import { weekSummary } from "../data/history";
+import type { CompletedWorkout } from "../types/workout";
 
-export function RecentActivity() {
+export function RecentActivity({ workouts }: { workouts: CompletedWorkout[] }) {
   return (
     <section aria-labelledby="recent-heading" className="space-y-3">
       <div className="flex items-baseline gap-3">
@@ -22,7 +23,7 @@ export function RecentActivity() {
           className="absolute left-1.5 top-2 bottom-2 w-px bg-hairline"
           aria-hidden="true"
         />
-        {recentWorkouts.map((workout) => {
+        {workouts.map((workout) => {
           const Icon =
             workout.type === "running" ? FootprintsIcon : DumbbellIcon;
           return (

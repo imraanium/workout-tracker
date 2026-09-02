@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   CheckIcon,
   DumbbellIcon,
@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { weeklyPlan } from "../data/weeklyPlan";
 import type { PlanDay } from "../types/workout";
+import { fetchWeeklyPlan } from "../actions";
 
 function StatusBadge({ status }: { status: PlanDay["status"] }) {
   if (status === "completed") {
@@ -33,11 +34,13 @@ function StatusBadge({ status }: { status: PlanDay["status"] }) {
 }
 
 export function WeeklyPlan() {
-  const [selectedId, setSelectedId] = useState(weeklyPlan[2].id);
+  const [days, setDays] = useState(weeklyPlan);
+  const [selectedId, setSelectedId] = useState(days[2].id);
+  useEffect(() => { void fetchWeeklyPlan().then((value) => { if (value.length) { setDays(value); setSelectedId(value[0].id); } }); }, []);
   const selected =
-    weeklyPlan.find((day) => day.id === selectedId) ?? weeklyPlan[0];
-  const completed = weeklyPlan.filter((d) => d.status === "completed").length;
-  const training = weeklyPlan.filter((d) => d.status !== "rest").length;
+    days.find((day) => day.id === selectedId) ?? days[0];
+  const completed = days.filter((d) => d.status === "completed").length;
+  const training = days.filter((d) => d.status !== "rest").length;
 
   return (
     <div className="space-y-5">
@@ -60,7 +63,7 @@ export function WeeklyPlan() {
 
       <div className="-mx-4 overflow-x-auto px-4 no-scrollbar md:mx-0 md:px-0">
         <ul className="flex min-w-max gap-2 md:grid md:min-w-0 md:grid-cols-7">
-          {weeklyPlan.map((day) => {
+          {days.map((day) => {
             const isSelected = day.id === selectedId;
             const Icon =
               day.type === "running"
