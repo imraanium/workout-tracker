@@ -137,7 +137,7 @@ export function Templates({ templatesApi, onUseTemplate }: TemplatesProps) {
             key={mode.kind === "edit" ? mode.id : "new"}
             template={editing}
             onSave={(template) => {
-              saveTemplate(template);
+              void saveTemplate(template);
               setMode({ kind: "edit", id: template.id });
             }}
             onDelete={

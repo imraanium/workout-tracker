@@ -6,6 +6,7 @@ import { RecentActivity } from "./RecentActivity";
 import { weekSummary } from "../data/history";
 import type { WorkoutLoggerApi } from "./logger/useWorkoutLogger";
 import type { WorkoutTemplate } from "../types/workout";
+import type { CompletedWorkout } from "../types/workout";
 
 interface DashboardProps {
   logger: WorkoutLoggerApi;
@@ -14,6 +15,7 @@ interface DashboardProps {
   loggerOpen: boolean;
   onOpenLogger: () => void;
   onCloseLogger: () => void;
+  recentWorkouts: CompletedWorkout[];
 }
 
 export function Dashboard({
@@ -23,6 +25,7 @@ export function Dashboard({
   loggerOpen,
   onOpenLogger,
   onCloseLogger,
+  recentWorkouts,
 }: DashboardProps) {
   const handleTemplate = (template: WorkoutTemplate) => {
     logger.loadTemplate(template);
@@ -85,7 +88,7 @@ export function Dashboard({
           </AnimatePresence>
         </div>
 
-        <RecentActivity />
+        <RecentActivity workouts={recentWorkouts} />
       </div>
     </div>
   );

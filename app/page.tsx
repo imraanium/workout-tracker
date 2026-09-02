@@ -1,63 +1,36 @@
-"use client";
+import { createClient } from "../lib/supabase/server";
+import { HomeClient } from "./HomeClient";
+import type { CompletedWorkout, WarmUpGroup, WorkoutTemplate } from "./types/workout";
 
-import { useState } from "react";
-import { Dashboard } from "./components/Dashboard";
-import { Header } from "./components/Header";
-import { BottomNav } from "./components/Navigation";
-import { Progression } from "./components/progression/Progression";
-import { Templates } from "./components/templates/Templates";
-import { WarmUpDrawer } from "./components/WarmUpDrawer";
-import { WeeklyPlan } from "./components/WeeklyPlan";
-import { useTemplates } from "./hooks/useTemplates";
-import { useWorkoutLogger } from "./components/logger/useWorkoutLogger";
-import type { TabId } from "./types/workout";
+export const dynamic = "force-dynamic";
 
-export default function Home() {
-  const [tab, setTab] = useState<TabId>("dashboard");
-  const [warmUpOpen, setWarmUpOpen] = useState(false);
-  const [loggerOpen, setLoggerOpen] = useState(true);
-  const logger = useWorkoutLogger();
-  const templatesApi = useTemplates();
-
-  return (
-    <div
-      data-accent="lime"
-      className="min-h-full w-full bg-canvas font-sans text-slate-200"
-    >
-      <Header
-        active={tab}
-        onChange={setTab}
-        onOpenWarmUp={() => setWarmUpOpen(true)}
-        today="Wed, Sep 2"
-      />
-
-      <main className="mx-auto max-w-6xl px-4 pb-28 pt-5 md:px-6 md:pb-12 md:pt-6">
-        {tab === "dashboard" && (
-          <Dashboard
-            logger={logger}
-            templates={templatesApi.templates}
-            unit="lbs"
-            loggerOpen={loggerOpen}
-            onOpenLogger={() => setLoggerOpen(true)}
-            onCloseLogger={() => setLoggerOpen(false)}
-          />
-        )}
-        {tab === "plan" && <WeeklyPlan />}
-        {tab === "templates" && (
-          <Templates
-            templatesApi={templatesApi}
-            onUseTemplate={(template) => {
-              logger.loadTemplate(template);
-              setLoggerOpen(true);
-              setTab("dashboard");
-            }}
-          />
-        )}
-        {tab === "progression" && <Progression />}
-      </main>
-
-      <BottomNav active={tab} onChange={setTab} />
-      <WarmUpDrawer open={warmUpOpen} onClose={() => setWarmUpOpen(false)} />
-    </div>
-  );
+export default async function Home() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const [templatesResult, warmupsResult, workoutsResult] = await Promise.all([
+    user ? supabase.from("templates").select("*").order("created_at") : Promise.resolve({ data: [], error: null }),
+    supabase.from("warmup_references").select("*").order("category"),
+    user ? supabase.from("workouts").select("*").order("logged_at", { ascending: false }).limit(8) : Promise.resolve({ data: [], error: null }),
+  ]);
+  const templates = (templatesResult.data ?? []) as NonNullable<typeof templatesResult.data>;
+  const exerciseRows = templates.length
+    ? (await supabase.from("template_exercises").select("*").in("template_id", templates.map((t) => t.id))).data ?? []
+    : [];
+  const mappedTemplates: WorkoutTemplate[] = templates.map((template) => ({
+    id: template.id, name: template.name, type: template.type, summary: template.description ?? "",
+    exercises: exerciseRows.filter((exercise) => exercise.template_id === template.id).sort((a, b) => a.order_index - b.order_index)
+      .map((exercise) => ({ name: exercise.exercise_name, targetReps: exercise.target_reps, sets: exercise.target_sets })),
+  }));
+  const recentWorkouts: CompletedWorkout[] = (workoutsResult.data ?? []).map((workout) => ({
+    id: workout.id, name: workout.name, type: workout.type, date: new Date(workout.logged_at).toLocaleDateString(),
+    relative: new Date(workout.logged_at).toLocaleDateString(), duration: "", volume: 0, sets: 0,
+    detail: "Logged workout",
+  }));
+  const warmups: WarmUpGroup[] = Object.entries((warmupsResult.data ?? []).reduce<Record<string, WarmUpGroup>>((groups, item) => {
+    const group = groups[item.category] ?? { id: item.category, title: item.category, note: "Reference movements", items: [] };
+    group.items.push({ name: item.title, description: item.description, duration: "" });
+    groups[item.category] = group;
+    return groups;
+  }, {})).map(([, group]) => group);
+  return <HomeClient initialTemplates={mappedTemplates} recentWorkouts={recentWorkouts} warmups={warmups} userEmail={user?.email ?? null} />;
 }

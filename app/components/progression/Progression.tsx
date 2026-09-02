@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { AwardIcon, LayersIcon, TargetIcon } from "lucide-react";
 import { ProgressChart } from "./ProgressChart";
 import { progressSeries, timeframes } from "../../data/progression";
 import type { Timeframe } from "../../types/workout";
+import { fetchProgression } from "../../actions";
 
 function formatPace(value: number) {
   const minutes = Math.floor(value);
@@ -12,12 +13,14 @@ function formatPace(value: number) {
 }
 
 export function Progression() {
+  const [liveSeries, setLiveSeries] = useState(progressSeries);
   const [seriesId, setSeriesId] = useState(progressSeries[0].id);
   const [metricId, setMetricId] = useState<"primary" | "secondary">("primary");
   const [timeframe, setTimeframe] = useState<Timeframe>("1Y");
+  useEffect(() => { void fetchProgression().then((series) => { if (series.length) { setLiveSeries(series); setSeriesId(series[0].id); } }); }, []);
 
   const series =
-    progressSeries.find((s) => s.id === seriesId) ?? progressSeries[0];
+    liveSeries.find((s) => s.id === seriesId) ?? liveSeries[0];
   const metric =
     series.metrics.find((m) => m.id === metricId) ?? series.metrics[0];
   const isPace = metric.unit === "min/mi";
@@ -67,7 +70,7 @@ export function Progression() {
             }}
             className="w-full rounded-lg border border-hairline bg-zinc850 px-3 py-2.5 text-sm font-bold text-white outline-none transition-colors duration-150 ease-swift focus:border-accent"
           >
-            {progressSeries.map((s) => (
+            {liveSeries.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
               </option>

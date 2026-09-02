@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { useState } from "react";
 import { DumbbellIcon, FootprintsIcon, PlusIcon, XIcon } from "lucide-react";
 import { ExerciseCard } from "./ExerciseCard";
 import type { WorkoutLoggerApi } from "./useWorkoutLogger";
@@ -21,6 +22,7 @@ interface WorkoutLoggerProps {
 
 export function WorkoutLogger({ logger, unit, onClose }: WorkoutLoggerProps) {
   const { draft, stats } = logger;
+  const [saving, setSaving] = useState(false);
   const progress =
     stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
 
@@ -50,7 +52,8 @@ export function WorkoutLogger({ logger, unit, onClose }: WorkoutLoggerProps) {
             />
           </div>
           <button
-            onClick={onClose}
+            onClick={async () => { setSaving(true); try { await logger.finishWorkout(); onClose(); } finally { setSaving(false); } }}
+            disabled={saving}
             aria-label="Close logger"
             className="rounded-lg p-1.5 text-slate-500 transition-colors duration-150 ease-swift hover:bg-slate-800 hover:text-white"
           >
@@ -142,7 +145,7 @@ export function WorkoutLogger({ logger, unit, onClose }: WorkoutLoggerProps) {
             onClick={onClose}
             className="rounded-xl bg-accent px-6 py-3 text-sm font-extrabold text-[color:var(--accent-ink)] shadow-accent transition-transform duration-150 ease-swift active:scale-[0.98]"
           >
-            Finish Workout
+            {saving ? "Saving..." : "Finish Workout"}
           </button>
         </div>
       </div>

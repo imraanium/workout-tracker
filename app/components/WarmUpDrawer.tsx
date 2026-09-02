@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDownIcon, FlameIcon, XIcon } from "lucide-react";
-import { warmUpGroups } from "../data/warmups";
+import type { WarmUpGroup } from "../types/workout";
 
 interface WarmUpDrawerProps {
   open: boolean;
   onClose: () => void;
+  warmups: WarmUpGroup[];
 }
 
-export function WarmUpDrawer({ open, onClose }: WarmUpDrawerProps) {
-  const [expanded, setExpanded] = useState<string | null>(warmUpGroups[0].id);
+export function WarmUpDrawer({ open, onClose, warmups }: WarmUpDrawerProps) {
+  const [expanded, setExpanded] = useState<string | null>(warmups[0]?.id ?? null);
 
   return (
     <AnimatePresence>
@@ -59,7 +60,7 @@ export function WarmUpDrawer({ open, onClose }: WarmUpDrawerProps) {
 
             <div className="flex-1 overflow-y-auto px-4 py-4">
               <ul className="space-y-2.5">
-                {warmUpGroups.map((group) => {
+                {warmups.map((group) => {
                   const isOpen = expanded === group.id;
                   return (
                     <li

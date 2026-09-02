@@ -1,22 +1,28 @@
 import { useCallback, useState } from 'react';
-import { workoutTemplates } from '../data/exercises';
 import { summarizeTemplate, templateId } from '../utils/templates';
 import type { WorkoutTemplate } from '../types/workout';
+import { deleteTemplate as deleteTemplateAction, saveTemplate as saveTemplateAction } from '../actions';
 
-export function useTemplates() {
-  const [templates, setTemplates] = useState<WorkoutTemplate[]>(workoutTemplates);
+export function useTemplates(initialTemplates: WorkoutTemplate[] = []) {
+  const [templates, setTemplates] = useState<WorkoutTemplate[]>(initialTemplates);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const saveTemplate = useCallback((template: WorkoutTemplate) => {
+  const saveTemplate = useCallback(async (template: WorkoutTemplate) => {
     const withSummary: WorkoutTemplate = { ...template, summary: summarizeTemplate(template) };
+    setIsSaving(true);
+    const savedId = await saveTemplateAction(withSummary);
+    const saved = { ...withSummary, id: savedId };
     setTemplates((prev) =>
-    prev.some((t) => t.id === withSummary.id) ?
-    prev.map((t) => t.id === withSummary.id ? withSummary : t) :
-    [...prev, withSummary]
+    prev.some((t) => t.id === template.id) ?
+    prev.map((t) => t.id === template.id ? saved : t) :
+    [...prev, saved]
     );
-    return withSummary;
+    setIsSaving(false);
+    return saved;
   }, []);
 
-  const deleteTemplate = useCallback((id: string) => {
+  const deleteTemplate = useCallback(async (id: string) => {
+    await deleteTemplateAction(id);
     setTemplates((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
@@ -31,7 +37,7 @@ export function useTemplates() {
     return created;
   }, []);
 
-  return { templates, saveTemplate, deleteTemplate, duplicateTemplate };
+  return { templates, saveTemplate, deleteTemplate, duplicateTemplate, isSaving };
 }
 
 export type TemplatesApi = ReturnType<typeof useTemplates>;
