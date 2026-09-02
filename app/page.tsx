@@ -1,5 +1,6 @@
 import { createClient } from "../lib/supabase/server";
 import { HomeClient } from "./HomeClient";
+import { LoginPage } from "./login/LoginPage";
 import type {
   CompletedWorkout,
   WarmUpGroup,
@@ -13,6 +14,8 @@ export default async function Home() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  if (!user) return <LoginPage />;
 
   const [templatesResult, warmupsResult, workoutsResult] = await Promise.all([
     user

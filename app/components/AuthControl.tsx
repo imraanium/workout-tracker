@@ -87,8 +87,7 @@ export function AuthControl({ email }: { email: string | null }) {
               setError("");
               try {
                 await signOut();
-                setOpen(true);
-                router.refresh();
+                router.replace("/login");
               } catch (cause) {
                 setError(
                   cause instanceof Error ? cause.message : "Could not log out",
